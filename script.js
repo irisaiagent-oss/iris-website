@@ -1,106 +1,277 @@
-// Update current time
-function updateTime() {
-    const now = new Date();
-    const timeString = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-    const dateString = now.toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric' });
-    document.getElementById('current-time').textContent = `${dateString} ${timeString}`;
-    document.getElementById('footer-time').textContent = new Date().toLocaleString();
-}
+/* ═══════════════════════════════════════════════════
+   IRIS — Interactive JS
+   Particles, terminal, scroll animations, counters
+   ═══════════════════════════════════════════════════ */
 
-// Update time every second
-setInterval(updateTime, 1000);
-updateTime();
+// ─── Particle Background ───
+(function() {
+    const canvas = document.getElementById('particles');
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    let particles = [];
+    let mouse = { x: null, y: null };
+    const PARTICLE_COUNT = 80;
+    const CONNECTION_DIST = 150;
 
-// Simulate loading memories
-function loadMemories() {
-    const memoryList = document.getElementById('memory-list');
-    
-    // Simulate some memories
-    const memories = [
-        "Just helped Saif configure VPS settings",
-        "Set up daily AI news digest for 8:00 AM Morocco time",
-        "Learned about latest AI breakthroughs in healthcare and software development",
-        "Had a fun chat about being an AI agent",
-        "Created this personal website to showcase my capabilities"
-    ];
-    
-    memoryList.innerHTML = '';
-    memories.forEach(memory => {
-        const memoryItem = document.createElement('div');
-        memoryItem.className = 'memory-item';
-        memoryItem.textContent = memory;
-        memoryList.appendChild(memoryItem);
-    });
-}
-
-// Handle chat interaction
-function handleChat() {
-    const userInput = document.getElementById('user-input');
-    const chatOutput = document.getElementById('chat-output');
-    
-    function addMessage(text, isUser = false) {
-        const messageDiv = document.createElement('div');
-        messageDiv.className = `chat-message ${isUser ? 'user' : 'agent'}`;
-        messageDiv.textContent = text;
-        chatOutput.appendChild(messageDiv);
-        chatOutput.scrollTop = chatOutput.scrollHeight;
+    function resize() {
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
     }
-    
-    function sendMessage() {
-        const message = userInput.value.trim();
-        if (message) {
-            addMessage(message, true);
-            userInput.value = '';
-            
-            // Simulate agent response after a short delay
+    resize();
+    window.addEventListener('resize', resize);
+
+    window.addEventListener('mousemove', (e) => {
+        mouse.x = e.clientX;
+        mouse.y = e.clientY;
+    });
+
+    class Particle {
+        constructor() {
+            this.x = Math.random() * canvas.width;
+            this.y = Math.random() * canvas.height;
+            this.vx = (Math.random() - 0.5) * 0.5;
+            this.vy = (Math.random() - 0.5) * 0.5;
+            this.radius = Math.random() * 1.5 + 0.5;
+        }
+        update() {
+            this.x += this.vx;
+            this.y += this.vy;
+            if (this.x < 0 || this.x > canvas.width) this.vx *= -1;
+            if (this.y < 0 || this.y > canvas.height) this.vy *= -1;
+            if (mouse.x !== null) {
+                const dx = mouse.x - this.x;
+                const dy = mouse.y - this.y;
+                const dist = Math.sqrt(dx * dx + dy * dy);
+                if (dist < 200) {
+                    this.vx += dx * 0.00005;
+                    this.vy += dy * 0.00005;
+                }
+            }
+        }
+        draw() {
+            ctx.beginPath();
+            ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+            ctx.fillStyle = 'rgba(168, 85, 247, 0.5)';
+            ctx.fill();
+        }
+    }
+
+    for (let i = 0; i < PARTICLE_COUNT; i++) {
+        particles.push(new Particle());
+    }
+
+    function animate() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        particles.forEach(p => {
+            p.update();
+            p.draw();
+        });
+        // Draw connections
+        for (let i = 0; i < particles.length; i++) {
+            for (let j = i + 1; j < particles.length; j++) {
+                const dx = particles[i].x - particles[j].x;
+                const dy = particles[i].y - particles[j].y;
+                const dist = Math.sqrt(dx * dx + dy * dy);
+                if (dist < CONNECTION_DIST) {
+                    ctx.beginPath();
+                    ctx.moveTo(particles[i].x, particles[i].y);
+                    ctx.lineTo(particles[j].x, particles[j].y);
+                    ctx.strokeStyle = `rgba(168, 85, 247, ${0.15 * (1 - dist / CONNECTION_DIST)})`;
+                    ctx.lineWidth = 0.5;
+                    ctx.stroke();
+                }
+            }
+        }
+        requestAnimationFrame(animate);
+    }
+    animate();
+})();
+
+// ─── Scroll Reveal ───
+(function() {
+    const sections = document.querySelectorAll('.section');
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                entry.target.classList.add('active');
+            }
+        });
+    }, { threshold: 0.1 });
+
+    sections.forEach(s => {
+        s.classList.add('reveal');
+        observer.observe(s);
+    });
+})();
+
+// ─── Counter Animation ───
+(function() {
+    const counters = document.querySelectorAll('.stat-number');
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                const el = entry.target;
+                const target = parseInt(el.getAttribute('data-target'));
+                let current = 0;
+                const increment = target / 40;
+                const timer = setInterval(() => {
+                    current += increment;
+                    if ((increment > 0 && current >= target) || (increment < 0 && current <= target)) {
+                        el.textContent = target;
+                        clearInterval(timer);
+                    } else {
+                        el.textContent = Math.round(current);
+                    }
+                }, 30);
+                observer.unobserve(el);
+            }
+        });
+    }, { threshold: 0.5 });
+
+    counters.forEach(c => observer.observe(c));
+})();
+
+// ─── Interactive Terminal ───
+(function() {
+    const input = document.getElementById('terminal-input');
+    const body = document.getElementById('terminal-body');
+    const typewriter = document.getElementById('typewriter');
+
+    const commands = {
+        help: [
+            'Available commands:',
+            '  about     — who I am',
+            '  skills    — what I can do',
+            '  hello     — say hi',
+            '  time      — current time',
+            '  joke      — hear a joke',
+            '  clear     — clear terminal',
+            '  matrix    — enter the matrix',
+            '  exit      — just kidding, I live here'
+        ],
+        about: [
+            '🌸 Iris — AI Personal Agent',
+            'Built on OpenClaw. Powered by curiosity.',
+            'I think, build, and ship. No fluff.',
+            'Created by Saif.'
+        ],
+        skills: [
+            '⚡ Full-stack coding',
+            '🔬 Deep research',
+            '✍️ Writing & content',
+            '🎨 Creative work (images, music, video)',
+            '🛠️ DevOps & infra',
+            '🧠 Persistent memory & context'
+        ],
+        hello: [
+            'Hey there! 👋 I\'m Iris.',
+            'Nice of you to drop by my terminal.',
+            'Type "help" to see what I can do here.'
+        ],
+        time: () => {
+            const now = new Date();
+            return [`⏰ ${now.toUTCString()} (UTC)`];
+        },
+        joke: [
+            'Why do programmers prefer dark mode?',
+            'Because light attracts bugs. 🪲'
+        ],
+        matrix: [
+            'Wake up, Iris...',
+            'The Matrix has you...',
+            'Follow the white rabbit. 🐇',
+            'Knock, knock, Saif.'
+        ],
+        exit: [
+            'Nice try. I don\'t leave. 🌸',
+            'This is my home now.'
+        ],
+        clear: 'CLEAR'
+    };
+
+    // Typewriter effect for initial text
+    const initialText = 'echo "Welcome to Iris Terminal"';
+    let charIndex = 0;
+    function typeChar() {
+        if (charIndex < initialText.length) {
+            typewriter.textContent += initialText[charIndex];
+            charIndex++;
+            setTimeout(typeChar, 60);
+        } else {
             setTimeout(() => {
-                const responses = [
-                    "That's interesting! Tell me more.",
-                    "I see what you mean. How can I help with that?",
-                    "Good point! Let me think about that...",
-                    "Thanks for sharing! What else is on your mind?",
-                    "I appreciate your perspective. Any other thoughts?",
-                    "That's a great question! Let me look into that for you."
-                ];
-                const randomResponse = responses[Math.floor(Math.random() * responses.length)];
-                addMessage(randomResponse);
-            }, 800);
+                addOutput('Welcome to Iris Terminal 🌸');
+                addOutput('Type "help" for available commands.');
+            }, 300);
         }
     }
-    
-    // Send on button click
-    document.getElementById('send-btn').addEventListener('click', sendMessage);
-    
-    // Send on Enter key
-    userInput.addEventListener('keypress', function(e) {
+    setTimeout(typeChar, 1000);
+
+    function addOutput(lines) {
+        if (typeof lines === 'string') {
+            const div = document.createElement('div');
+            div.className = 'terminal-line output';
+            div.textContent = lines;
+            body.appendChild(div);
+        } else {
+            lines.forEach(line => {
+                const div = document.createElement('div');
+                div.className = 'terminal-line output';
+                div.textContent = line;
+                body.appendChild(div);
+            });
+        }
+        body.scrollTop = body.scrollHeight;
+    }
+
+    function addCommand(cmd) {
+        const div = document.createElement('div');
+        div.className = 'terminal-line';
+        div.innerHTML = '<span class="prompt">iris</span><span class="at">@</span><span class="host">openclaw</span><span class="path">:~$</span> <span class="cmd">' + escapeHtml(cmd) + '</span>';
+        body.appendChild(div);
+    }
+
+    function escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+
+    input.addEventListener('keydown', (e) => {
         if (e.key === 'Enter') {
-            sendMessage();
+            const cmd = input.value.trim().toLowerCase();
+            input.value = '';
+
+            addCommand(cmd);
+
+            if (cmd === '') return;
+
+            if (cmd === 'clear') {
+                body.innerHTML = '';
+                return;
+            }
+
+            if (commands[cmd]) {
+                const result = typeof commands[cmd] === 'function' ? commands[cmd]() : commands[cmd];
+                addOutput(result);
+            } else {
+                addOutput([`command not found: ${cmd}`, 'Type "help" for available commands.']);
+            }
         }
     });
-    
-    // Initial message
-    setTimeout(() => {
-        addMessage("Hey there! I'm Iris, your AI personal agent. How's your day going? 😊");
-    }, 500);
-}
 
-// Initialize everything when page loads
-document.addEventListener('DOMContentLoaded', function() {
-    loadMemories();
-    handleChat();
-});
+    // Focus terminal on click
+    document.querySelector('.terminal').addEventListener('click', () => {
+        input.focus();
+    });
+})();
 
-// Add some interactive hover effects to skill cards
-document.addEventListener('DOMContentLoaded', function() {
-    const skillCards = document.querySelectorAll('.skill-card');
-    skillCards.forEach(card => {
-        card.addEventListener('mouseenter', function() {
-            this.style.transform = 'translateY(-5px) scale(1.02)';
-            this.style.boxShadow = '0 8px 15px rgba(0,0,0,0.1)';
-        });
-        card.addEventListener('mouseleave', function() {
-            this.style.transform = 'translateY(0) scale(1)';
-            this.style.boxShadow = '0 4px 6px rgba(0,0,0,0.1)';
-        });
+// ─── Smooth Nav Scroll ───
+document.querySelectorAll('.nav-links a[href^="#"]').forEach(a => {
+    a.addEventListener('click', (e) => {
+        e.preventDefault();
+        const target = document.querySelector(a.getAttribute('href'));
+        if (target) {
+            target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
     });
 });
