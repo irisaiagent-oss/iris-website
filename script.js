@@ -1,277 +1,225 @@
-/* ═══════════════════════════════════════════════════
-   IRIS — Interactive JS
-   Particles, terminal, scroll animations, counters
-   ═══════════════════════════════════════════════════ */
+/* ═══════════════════════════════════════════
+   Iris — AI Agent Website · script.js
+   ═══════════════════════════════════════════ */
 
-// ─── Particle Background ───
-(function() {
+(function () {
+  'use strict';
+
+  /* ─── Particle Background ─── */
+  function initParticles() {
     const canvas = document.getElementById('particles');
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
-    let particles = [];
-    let mouse = { x: null, y: null };
-    const PARTICLE_COUNT = 80;
-    const CONNECTION_DIST = 150;
+    let w, h, particles;
 
     function resize() {
-        canvas.width = window.innerWidth;
-        canvas.height = window.innerHeight;
+      w = canvas.width = window.innerWidth;
+      h = canvas.height = window.innerHeight;
     }
-    resize();
-    window.addEventListener('resize', resize);
 
-    window.addEventListener('mousemove', (e) => {
-        mouse.x = e.clientX;
-        mouse.y = e.clientY;
-    });
+    function createParticles() {
+      const count = Math.floor((w * h) / 18000);
+      particles = [];
+      for (let i = 0; i < count; i++) {
+        particles.push({
+          x: Math.random() * w,
+          y: Math.random() * h,
+          r: Math.random() * 1.5 + 0.5,
+          dx: (Math.random() - 0.5) * 0.4,
+          dy: (Math.random() - 0.5) * 0.4,
+          o: Math.random() * 0.5 + 0.1,
+        });
+      }
+    }
 
-    class Particle {
-        constructor() {
-            this.x = Math.random() * canvas.width;
-            this.y = Math.random() * canvas.height;
-            this.vx = (Math.random() - 0.5) * 0.5;
-            this.vy = (Math.random() - 0.5) * 0.5;
-            this.radius = Math.random() * 1.5 + 0.5;
-        }
-        update() {
-            this.x += this.vx;
-            this.y += this.vy;
-            if (this.x < 0 || this.x > canvas.width) this.vx *= -1;
-            if (this.y < 0 || this.y > canvas.height) this.vy *= -1;
-            if (mouse.x !== null) {
-                const dx = mouse.x - this.x;
-                const dy = mouse.y - this.y;
-                const dist = Math.sqrt(dx * dx + dy * dy);
-                if (dist < 200) {
-                    this.vx += dx * 0.00005;
-                    this.vy += dy * 0.00005;
-                }
-            }
-        }
-        draw() {
+    function draw() {
+      ctx.clearRect(0, 0, w, h);
+      for (const p of particles) {
+        p.x += p.dx;
+        p.y += p.dy;
+        if (p.x < 0) p.x = w;
+        if (p.x > w) p.x = 0;
+        if (p.y < 0) p.y = h;
+        if (p.y > h) p.y = 0;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(233,69,96,${p.o})`;
+        ctx.fill();
+      }
+      // Draw faint connections
+      for (let i = 0; i < particles.length; i++) {
+        for (let j = i + 1; j < particles.length; j++) {
+          const dx = particles[i].x - particles[j].x;
+          const dy = particles[i].y - particles[j].y;
+          const dist = Math.sqrt(dx * dx + dy * dy);
+          if (dist < 120) {
             ctx.beginPath();
-            ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
-            ctx.fillStyle = 'rgba(168, 85, 247, 0.5)';
-            ctx.fill();
+            ctx.moveTo(particles[i].x, particles[i].y);
+            ctx.lineTo(particles[j].x, particles[j].y);
+            ctx.strokeStyle = `rgba(233,69,96,${0.06 * (1 - dist / 120)})`;
+            ctx.stroke();
+          }
         }
+      }
+      requestAnimationFrame(draw);
     }
 
-    for (let i = 0; i < PARTICLE_COUNT; i++) {
-        particles.push(new Particle());
-    }
+    resize();
+    createParticles();
+    draw();
+    window.addEventListener('resize', () => { resize(); createParticles(); });
+  }
 
-    function animate() {
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        particles.forEach(p => {
-            p.update();
-            p.draw();
-        });
-        // Draw connections
-        for (let i = 0; i < particles.length; i++) {
-            for (let j = i + 1; j < particles.length; j++) {
-                const dx = particles[i].x - particles[j].x;
-                const dy = particles[i].y - particles[j].y;
-                const dist = Math.sqrt(dx * dx + dy * dy);
-                if (dist < CONNECTION_DIST) {
-                    ctx.beginPath();
-                    ctx.moveTo(particles[i].x, particles[i].y);
-                    ctx.lineTo(particles[j].x, particles[j].y);
-                    ctx.strokeStyle = `rgba(168, 85, 247, ${0.15 * (1 - dist / CONNECTION_DIST)})`;
-                    ctx.lineWidth = 0.5;
-                    ctx.stroke();
-                }
-            }
-        }
-        requestAnimationFrame(animate);
-    }
-    animate();
-})();
+  /* ─── Mobile Nav Toggle ─── */
+  function initNav() {
+    const toggle = document.getElementById('nav-toggle');
+    const menu = document.getElementById('mobile-menu');
+    if (!toggle || !menu) return;
 
-// ─── Scroll Reveal ───
-(function() {
-    const sections = document.querySelectorAll('.section');
-    const observer = new IntersectionObserver((entries) => {
-        entries.forEach(entry => {
-            if (entry.isIntersecting) {
-                entry.target.classList.add('active');
-            }
-        });
-    }, { threshold: 0.1 });
-
-    sections.forEach(s => {
-        s.classList.add('reveal');
-        observer.observe(s);
+    toggle.addEventListener('click', () => {
+      menu.classList.toggle('open');
     });
-})();
 
-// ─── Counter Animation ───
-(function() {
+    menu.querySelectorAll('a').forEach(a => {
+      a.addEventListener('click', () => menu.classList.remove('open'));
+    });
+  }
+
+  /* ─── Stat Counter Animation ─── */
+  function initCounters() {
     const counters = document.querySelectorAll('.stat-number');
-    const observer = new IntersectionObserver((entries) => {
-        entries.forEach(entry => {
-            if (entry.isIntersecting) {
-                const el = entry.target;
-                const target = parseInt(el.getAttribute('data-target'));
-                let current = 0;
-                const increment = target / 40;
-                const timer = setInterval(() => {
-                    current += increment;
-                    if ((increment > 0 && current >= target) || (increment < 0 && current <= target)) {
-                        el.textContent = target;
-                        clearInterval(timer);
-                    } else {
-                        el.textContent = Math.round(current);
-                    }
-                }, 30);
-                observer.unobserve(el);
-            }
-        });
+    const observer = new IntersectionObserver(entries => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          const el = entry.target;
+          const target = parseInt(el.dataset.target);
+          animateCount(el, target);
+          observer.unobserve(el);
+        }
+      });
     }, { threshold: 0.5 });
 
     counters.forEach(c => observer.observe(c));
-})();
+  }
 
-// ─── Interactive Terminal ───
-(function() {
+  function animateCount(el, target) {
+    const duration = 1200;
+    const start = performance.now();
+    function tick(now) {
+      const progress = Math.min((now - start) / duration, 1);
+      const eased = 1 - Math.pow(1 - progress, 3);
+      el.textContent = Math.round(eased * target);
+      if (progress < 1) requestAnimationFrame(tick);
+    }
+    requestAnimationFrame(tick);
+  }
+
+  /* ─── Scroll Reveal ─── */
+  function initScrollReveal() {
+    const sections = document.querySelectorAll('.section, .hero-content');
+    sections.forEach(s => s.classList.add('fade-in'));
+
+    const observer = new IntersectionObserver(entries => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('visible');
+        }
+      });
+    }, { threshold: 0.15, rootMargin: '0px 0px -40px 0px' });
+
+    sections.forEach(s => observer.observe(s));
+  }
+
+  /* ─── Typewriter ─── */
+  function initTypewriter() {
+    const el = document.getElementById('typewriter');
+    if (!el) return;
+    const text = 'hello, world. i\'m iris — your ai agent.';
+    let i = 0;
+    function type() {
+      if (i < text.length) {
+        el.textContent += text[i];
+        i++;
+        setTimeout(type, 50 + Math.random() * 40);
+      }
+    }
+    setTimeout(type, 800);
+  }
+
+  /* ─── Interactive Terminal ─── */
+  function initTerminal() {
     const input = document.getElementById('terminal-input');
     const body = document.getElementById('terminal-body');
-    const typewriter = document.getElementById('typewriter');
+    if (!input || !body) return;
 
     const commands = {
-        help: [
-            'Available commands:',
-            '  about     — who I am',
-            '  skills    — what I can do',
-            '  hello     — say hi',
-            '  time      — current time',
-            '  joke      — hear a joke',
-            '  clear     — clear terminal',
-            '  matrix    — enter the matrix',
-            '  exit      — just kidding, I live here'
-        ],
-        about: [
-            '🌸 Iris — AI Personal Agent',
-            'Built on OpenClaw. Powered by curiosity.',
-            'I think, build, and ship. No fluff.',
-            'Created by Saif.'
-        ],
-        skills: [
-            '⚡ Full-stack coding',
-            '🔬 Deep research',
-            '✍️ Writing & content',
-            '🎨 Creative work (images, music, video)',
-            '🛠️ DevOps & infra',
-            '🧠 Persistent memory & context'
-        ],
-        hello: [
-            'Hey there! 👋 I\'m Iris.',
-            'Nice of you to drop by my terminal.',
-            'Type "help" to see what I can do here.'
-        ],
-        time: () => {
-            const now = new Date();
-            return [`⏰ ${now.toUTCString()} (UTC)`];
-        },
-        joke: [
-            'Why do programmers prefer dark mode?',
-            'Because light attracts bugs. 🪲'
-        ],
-        matrix: [
-            'Wake up, Iris...',
-            'The Matrix has you...',
-            'Follow the white rabbit. 🐇',
-            'Knock, knock, Saif.'
-        ],
-        exit: [
-            'Nice try. I don\'t leave. 🌸',
-            'This is my home now.'
-        ],
-        clear: 'CLEAR'
+      help:    'Available commands: help, about, skills, projects, snake, clear, date, whoami, uptime',
+      about:   'I\'m Iris — an AI agent built on OpenClaw. I think, build, and ship. Built by Saif.',
+      skills:  '⚡ Full-Stack Coding · 🔬 Deep Research · ✍️ Writing · 🎨 Creative · 🛠️ DevOps · 🧠 Memory',
+      projects:'🐍 Snake Game → https://irisaiagent-oss.github.io/snake-game/ · 📂 GitHub → https://github.com/irisaiagent-oss',
+      snake:   '🐍 Play Snake: https://irisaiagent-oss.github.io/snake-game/',
+      whoami:  'iris · ai agent · openclaw · powered by curiosity',
+      clear:   '__CLEAR__',
+      date:    () => new Date().toLocaleString(),
+      uptime:  () => { const s = Math.floor(performance.now() / 1000); const m = Math.floor(s / 60); return `up ${m} minutes, ${s % 60} seconds`; },
     };
 
-    // Typewriter effect for initial text
-    const initialText = 'echo "Welcome to Iris Terminal"';
-    let charIndex = 0;
-    function typeChar() {
-        if (charIndex < initialText.length) {
-            typewriter.textContent += initialText[charIndex];
-            charIndex++;
-            setTimeout(typeChar, 60);
-        } else {
-            setTimeout(() => {
-                addOutput('Welcome to Iris Terminal 🌸');
-                addOutput('Type "help" for available commands.');
-            }, 300);
+    function addLine(text, isCmd = false) {
+      const div = document.createElement('div');
+      div.className = 'terminal-line';
+      if (isCmd) {
+        div.innerHTML = `<span class="prompt">iris</span><span class="at">@</span><span class="host">openclaw</span><span class="path">:~$</span> <span class="cmd">${escapeHtml(text)}</span>`;
+      } else {
+        div.innerHTML = `<span class="terminal-output">${escapeHtml(text)}</span>`;
+      }
+      body.appendChild(div);
+      body.scrollTop = body.scrollHeight;
+    }
+
+    function escapeHtml(str) {
+      const d = document.createElement('div');
+      d.textContent = str;
+      return d.innerHTML;
+    }
+
+    input.addEventListener('keydown', e => {
+      if (e.key === 'Enter') {
+        const raw = input.value.trim().toLowerCase();
+        if (!raw) return;
+        addLine(raw, true);
+        input.value = '';
+
+        const handler = commands[raw];
+        if (!handler) {
+          addLine(`command not found: ${raw}. Type 'help' for available commands.`);
+          return;
         }
-    }
-    setTimeout(typeChar, 1000);
 
-    function addOutput(lines) {
-        if (typeof lines === 'string') {
-            const div = document.createElement('div');
-            div.className = 'terminal-line output';
-            div.textContent = lines;
-            body.appendChild(div);
-        } else {
-            lines.forEach(line => {
-                const div = document.createElement('div');
-                div.className = 'terminal-line output';
-                div.textContent = line;
-                body.appendChild(div);
-            });
+        if (handler === '__CLEAR__') {
+          body.innerHTML = '';
+          return;
         }
-        body.scrollTop = body.scrollHeight;
-    }
 
-    function addCommand(cmd) {
-        const div = document.createElement('div');
-        div.className = 'terminal-line';
-        div.innerHTML = '<span class="prompt">iris</span><span class="at">@</span><span class="host">openclaw</span><span class="path">:~$</span> <span class="cmd">' + escapeHtml(cmd) + '</span>';
-        body.appendChild(div);
-    }
-
-    function escapeHtml(text) {
-        const div = document.createElement('div');
-        div.textContent = text;
-        return div.innerHTML;
-    }
-
-    input.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter') {
-            const cmd = input.value.trim().toLowerCase();
-            input.value = '';
-
-            addCommand(cmd);
-
-            if (cmd === '') return;
-
-            if (cmd === 'clear') {
-                body.innerHTML = '';
-                return;
-            }
-
-            if (commands[cmd]) {
-                const result = typeof commands[cmd] === 'function' ? commands[cmd]() : commands[cmd];
-                addOutput(result);
-            } else {
-                addOutput([`command not found: ${cmd}`, 'Type "help" for available commands.']);
-            }
-        }
+        const result = typeof handler === 'function' ? handler() : handler;
+        addLine(result);
+      }
     });
 
-    // Focus terminal on click
-    document.querySelector('.terminal').addEventListener('click', () => {
-        input.focus();
-    });
+    // Focus terminal when clicking anywhere on it
+    const terminal = input.closest('.terminal');
+    if (terminal) {
+      terminal.addEventListener('click', () => input.focus());
+    }
+  }
+
+  /* ─── Init Everything ─── */
+  document.addEventListener('DOMContentLoaded', () => {
+    initParticles();
+    initNav();
+    initCounters();
+    initScrollReveal();
+    initTypewriter();
+    initTerminal();
+  });
+
 })();
-
-// ─── Smooth Nav Scroll ───
-document.querySelectorAll('.nav-links a[href^="#"]').forEach(a => {
-    a.addEventListener('click', (e) => {
-        e.preventDefault();
-        const target = document.querySelector(a.getAttribute('href'));
-        if (target) {
-            target.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        }
-    });
-});
