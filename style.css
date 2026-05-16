@@ -11,8 +11,8 @@
   --text-dim:  #8888aa;
   --accent:    #e94560;
   --accent-glow: rgba(233,69,96,0.18);
-  --purple:    #533483;
-  --gradient:  linear-gradient(135deg, #e94560, #533483);
+  --purple:    #9b6dff;
+  --gradient:  linear-gradient(135deg, #e94560, #9b6dff);
   --font:      'Inter', system-ui, sans-serif;
   --mono:      'JetBrains Mono', monospace;
   --radius:    12px;
